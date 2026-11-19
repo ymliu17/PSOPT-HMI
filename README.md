@@ -39,7 +39,6 @@ https://github.com/user-attachments/assets/4bee90d5-419a-4acb-89e3-9a041e7dfdc7
 - [Troubleshooting](#troubleshooting)
 - [Windows distribution](#windows-distribution)
 - [Validation and current limitations](#validation-and-current-limitations)
-- [Study sources](#study-sources)
 - [Third-party files](#third-party-files)
 
 ---
@@ -462,20 +461,6 @@ Current controller limitations:
   `ECG_DEVICES`; discovery order can matter when several devices are present.
 - API polling has no overall timeout. The loop also waits for game readiness
   before its 25-block exit check, so a completed session can remain waiting.
-
-## Study sources
-
-- [ClinicalTrials.gov: NCT06005038](https://clinicaltrials.gov/study/NCT06005038)
-  ([structured record](https://clinicaltrials.gov/api/v2/studies/NCT06005038)),
-  updated 2026-11-18 and checked 2026-11-19: registration, design, enrollment,
-  status, arms, and registered intervention description.
-- *pSOPT RCT Procedure Manual*, supplied locally as
-  `RCT PSOPT Procedure Manual_9.28.pdf` (45 pages): p. 2 confirms the NCT number;
-  pp. 11–13 describe assessments; pp. 31–43 describe intervention sessions.
-  The filename does not establish a full version date. The manual is a local
-  reference and is not distributed in this public repository.
-- [Stanford CogT Lab study overview](https://cogtlab.stanford.edu/research/ongoing-studies):
-  public study context and training schedule.
 
 ## Third-party files
 
