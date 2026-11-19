@@ -3,6 +3,14 @@
 ECG acquisition and HF-HRV-based game adaptation using the PLUX Python API,
 with an optional separate window for waveform and decision monitoring.
 
+## Video demo
+
+HRV-HMI workflow overview (4× speed, approximately 16 seconds).
+
+https://github.com/user-attachments/assets/4bee90d5-419a-4acb-89e3-9a041e7dfdc7
+
+## Getting started
+
 The repository includes the controller, analysis code, native PLUX drivers,
 offline regression checks, and Windows packaging tools. Use the Python version
 and architecture matching your bundled driver. Configure `webserver` and
