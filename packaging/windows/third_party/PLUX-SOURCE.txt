@@ -1,0 +1,5 @@
+PLUX Python API upstream: https://github.com/pluxbiosignals/python-samples
+
+Windows native files are copied unchanged from this project's PLUX-API-Python3/Win64_* folders.
+The included LICENSE is a copy from the upstream python-samples repository.
+Local application and study code retain their existing authorship notices.

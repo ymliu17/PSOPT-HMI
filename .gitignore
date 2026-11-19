@@ -1,0 +1,56 @@
+# Experiment outputs and recordings stay local.
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.npy
+*.npz
+*.mat
+*.h5
+*.hdf5
+*.edf
+*.bdf
+*.mp4
+*.mov
+*.avi
+*.wav
+*.log
+Pilot/
+data/
+results/
+recordings/
+
+# Generated distributions and local Python environments.
+dist/
+build/
+*.zip
+*.zip.sha256
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration and credentials.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.codex/
+.agents/
+.claude/
+
+# OS/editor metadata and the legacy placeholder folder.
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+Python_Scripts_ECG_API_v2/
