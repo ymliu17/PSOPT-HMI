@@ -1,9 +1,13 @@
 # PSOPT-HMI
 
-ECG-based adaptive game controller for PSOPT. The controller connects the
-Brain Wellness Games web app to a PLUX ECG sensor, records ECG during each game
-block, and uses **high-frequency heart rate variability (HF-HRV)** to decide
-whether to request a difficulty increase for the next block.
+ECG-based adaptive game controller for **pSOPT (Personalized Engine for Speed of
+Information Processing)**, associated with the **CogT pSOPT Intervention Study**
+([NCT06005038](https://clinicaltrials.gov/study/NCT06005038)) at Stanford University.
+The study examines cognitive training personalized using physiological feedback
+and task performance. This repository provides the ECG acquisition and
+physiological decision component: it connects the Brain Wellness Games web app to
+a PLUX sensor and uses **high-frequency heart rate variability (HF-HRV)** to
+request a difficulty increase after each block.
 
 An optional **ECG monitor** shows the acquired waveform, the analysis windows,
 and the actual shapelet correlations and decision sent to the game API.
@@ -20,6 +24,9 @@ https://github.com/user-attachments/assets/4bee90d5-419a-4acb-89e3-9a041e7dfdc7
 
 ## Table of contents
 
+- [Study](#study)
+- [Protocol session workflow](#protocol-session-workflow)
+- [Protocol and implementation differences](#protocol-and-implementation-differences)
 - [How it works](#how-it-works)
 - [Adaptive decision logic](#adaptive-decision-logic)
 - [ECG and HF-HRV analysis](#ecg-and-hf-hrv-analysis)
@@ -32,9 +39,87 @@ https://github.com/user-attachments/assets/4bee90d5-419a-4acb-89e3-9a041e7dfdc7
 - [Troubleshooting](#troubleshooting)
 - [Windows distribution](#windows-distribution)
 - [Validation and current limitations](#validation-and-current-limitations)
+- [Study sources](#study-sources)
 - [Third-party files](#third-party-files)
 
 ---
+
+## Study
+
+| | |
+|---|---|
+| Registration | [NCT06005038](https://clinicaltrials.gov/study/NCT06005038) |
+| Registered title | CogT pSOPT Intervention Study |
+| Official title | Personalized Engine for Speed of Information Processing |
+| Sponsor / PI | Stanford University / Feng Lin |
+| Development stage | R33 pilot trial following R21 intervention development |
+| Design | Randomized, parallel groups; participants and outcome assessors masked |
+| Registered population | Adults aged 60+; mild or subjective cognitive impairment |
+| Enrollment | 50 participants (actual) |
+| Status | Completed; study completion 2026-07-31 |
+| Registered assessment time points | Baseline, Week 7, and 3-month follow-up |
+
+Registry details reflect the **2026-11-18** update, verified **2026-11-19** against
+the [ClinicalTrials.gov record](https://clinicaltrials.gov/study/NCT06005038).
+
+The two study arms are:
+
+- **pSOPT (experimental):** speed-of-processing training personalized with
+  physiological feedback and cognitive performance.
+- **MLA (comparator):** computerized mental leisure activities, including
+  crosswords, Sudoku, and solitaire. ECG is collected in both arms.
+
+This Python entry point supports the pSOPT combined-game workflow. The procedure
+manual describes MLA ECG collection separately through **OpenSignals**, without
+this Python controller (manual pp. 42–43); there is no study-arm command-line flag.
+
+## Protocol session workflow
+
+The supplied *pSOPT RCT Procedure Manual* describes **6 weeks**, **3 sessions per
+week**, and **18 sessions** in total. Each appointment lasts approximately
+60 minutes, including roughly 40–45 minutes of active tasks (manual p. 31).
+
+| Stage | Procedure described in the manual |
+|---|---|
+| Preparation | Set up the participant's game display and operator's computer, pair the ECG device, and check signal quality before the task |
+| Orientation | Teach and practice all four games at the first session; refresh instructions when needed |
+| Before / after training | Collect fatigue and SAM ratings; the assessment summary also lists 5-minute resting ECG recordings before and after training |
+| pSOPT task | 20 blocks of approximately 2 minutes each; between blocks, collect ratings of focus, difficulty, and novelty before continuing |
+| MLA task | Approximately 40 minutes with ECG recorded in OpenSignals; the pSOPT between-block questions are not administered |
+| Weekly measures | Medical changes/adverse events, mental leisure activity, and physical activity questionnaires |
+| After the session | Verify saved data and transfer it to the study's designated storage |
+
+Sources: manual pp. 12–13, 31–32, and 35–43. These are staff-administered study
+procedures; the controller does not collect questionnaires, schedule visits,
+perform randomization, or automatically record the pre/post resting ECG periods.
+
+The combined task contains four games (manual pp. 37–40):
+
+| Game | Participant task |
+|---|---|
+| Target Tracker | Track initially marked objects among moving distractors |
+| Sound Sweeps | Identify the pitch direction of successive sounds |
+| Mixed Signals | Respond when the auditory and visual information match the current rule |
+| Task 4 (shape/color/category matching) | Match figures according to the preceding rule cue |
+
+Game presentation and sequencing are handled by the web application. This
+controller reads block status and returns the physiological difficulty decision.
+
+## Protocol and implementation differences
+
+The manual, registry, and current source describe different aspects and versions
+of the system. The following differences matter when reproducing a session:
+
+| Topic | Study documentation | Current repository |
+|---|---|---|
+| Session length | Manual p. 32 specifies **20 × 2-minute blocks** | The controller checks for exit after **25 blocks** and relies on game status for block duration; it does not enforce the manual's stopping rule |
+| Physiological metric | The registry's intervention description names **RMSSD** | The active analysis computes **ln(HF-HRV)** in eight windows and compares it with two shapelets |
+| Personalization inputs | The study describes physiological feedback plus cognitive performance | This controller sends the ECG-derived boolean; it does not implement an accuracy-based decision rule or the full game-side adaptation |
+| Follow-up schedule | Registry: baseline, Week 7, and 3 months; manual p. 12: T3 within a 2-week window 8 weeks after T2 | Visit timing is outside this software; these descriptions should not be assumed to be identical |
+
+The instructions below document the code as it currently runs. Confirm the
+approved study version and reconcile these differences before treating this
+checkout as an exact implementation of the procedure manual.
 
 ## How it works
 
@@ -53,8 +138,10 @@ For each block, the controller:
 6. Saves the analysis results locally and sends an `IncreaseDifficulty` boolean
    to the API, then waits for the next block.
 
-The controller's loop is configured for 25 blocks. The game application and API
-are external services; this repository contains the ECG controller and monitor.
+The controller's loop is configured for 25 blocks, compared with 20 in the manual
+(see [Protocol and implementation differences](#protocol-and-implementation-differences)).
+The game application and API are external services; this repository contains the
+ECG controller and monitor.
 
 ## Adaptive decision logic
 
@@ -215,8 +302,9 @@ python ECG_Device_Controller_v2.py <SESSION_EXTERNAL_ID> [monitor]
 
 1. Power on and pair the PLUX device. Close other acquisition programs that may
    already be using it.
-2. Open your PSOPT game application and create/select the session on the server
-   configured by `webserver`.
+2. Open the PSOPT [combined-game page](https://brainwellnessgames.azurewebsites.net/Home/Master)
+   identified in the manual (p. 40), or your study's configured deployment.
+   Create/select the session on the server configured by `webserver`.
 3. Start the controller with the **same external session ID** used in the game:
 
    ```bash
@@ -225,6 +313,11 @@ python ECG_Device_Controller_v2.py <SESSION_EXTERNAL_ID> [monitor]
 
 4. Look for `Connected to ECG device ...; battery: ...%`, then follow the game's
    block-start flow. The monitor opens when ECG acquisition begins.
+
+For study use, follow the manual's orientation and questionnaire procedures around
+these software steps. Between pSOPT blocks, the manual calls for focus, difficulty,
+and novelty ratings before the participant starts the next block (p. 41). Those
+ratings are collected outside this monitor.
 
 `99999` is an example; use your actual session ID. The controller looks up an
 existing server session rather than creating one. A local API must implement the
@@ -360,6 +453,8 @@ Bluetooth acquisition still needs validation on the receiving PC.
 
 Current controller limitations:
 
+- The study's 20-block stopping rule and registered RMSSD description differ from
+  this checkout; see [Protocol and implementation differences](#protocol-and-implementation-differences).
 - Short recordings return no HF-HRV values, but downstream code has no safe
   short-block fallback and may exit. A monitor label of unavailable does not
   provide a substitute decision.
@@ -367,6 +462,20 @@ Current controller limitations:
   `ECG_DEVICES`; discovery order can matter when several devices are present.
 - API polling has no overall timeout. The loop also waits for game readiness
   before its 25-block exit check, so a completed session can remain waiting.
+
+## Study sources
+
+- [ClinicalTrials.gov: NCT06005038](https://clinicaltrials.gov/study/NCT06005038)
+  ([structured record](https://clinicaltrials.gov/api/v2/studies/NCT06005038)),
+  updated 2026-11-18 and checked 2026-11-19: registration, design, enrollment,
+  status, arms, and registered intervention description.
+- *pSOPT RCT Procedure Manual*, supplied locally as
+  `RCT PSOPT Procedure Manual_9.28.pdf` (45 pages): p. 2 confirms the NCT number;
+  pp. 11–13 describe assessments; pp. 31–43 describe intervention sessions.
+  The filename does not establish a full version date. The manual is a local
+  reference and is not distributed in this public repository.
+- [Stanford CogT Lab study overview](https://cogtlab.stanford.edu/research/ongoing-studies):
+  public study context and training schedule.
 
 ## Third-party files
 
