@@ -37,7 +37,6 @@ https://github.com/user-attachments/assets/4bee90d5-419a-4acb-89e3-9a041e7dfdc7
 - [Recorded output](#recorded-output)
 - [ECG monitor](#ecg-monitor)
 - [Troubleshooting](#troubleshooting)
-- [Windows distribution](#windows-distribution)
 - [Validation and current limitations](#validation-and-current-limitations)
 - [Third-party files](#third-party-files)
 
@@ -189,10 +188,7 @@ matching changes to the analysis configuration.
 | [`Start_ECG_Recording_v2.bat`](Start_ECG_Recording_v2.bat) | Original Windows recording launcher |
 | [`requirements-windows-py310.txt`](requirements-windows-py310.txt) | Direct dependency versions for a fresh Windows Python 3.10 environment |
 | [`requirements-windows-py310.lock.txt`](requirements-windows-py310.lock.txt) | Full pinned Windows Python 3.10 dependency set |
-| [`packaging/windows/`](packaging/windows/) | Windows distribution templates: setup, launchers, environment check, and instructions |
-| [`packaging/build_windows_package.py`](packaging/build_windows_package.py) | Builds and verifies a complete Windows source/driver ZIP |
 | [`test_ecg_monitor.py`](test_ecg_monitor.py) | Offline regression checks |
-| [`README_UPDATE_WINDOWS.txt`](README_UPDATE_WINDOWS.txt) | Instructions for updating an existing Windows installation |
 
 Experiment CSVs, recordings, logs, virtual environments, and generated archives
 are excluded by [`.gitignore`](.gitignore). Runtime outputs remain local.
@@ -212,8 +208,8 @@ the selected directory at startup.
 
 | Platform / interpreter | Example driver directory | Setup status |
 |---|---|---|
-| Windows x64, Python 3.10 | `Win64_310` | Pinned dependencies and distribution tools provided; test acquisition on the target PC |
-| Apple Silicon, native arm64 Python 3.11 | `M1_311` | Device connection and battery reading verified on the development Mac |
+| Windows x64, Python 3.10 | `Win64_310` | Pinned dependencies provided; acquisition requires validation on the target PC |
+| Apple Silicon, native arm64 Python 3.11 | `M1_311` | Device connection and battery reading verified on macOS |
 | Intel Mac, Python 3.10 | `MacOS/Intel310` | Driver bundled; not verified in this setup |
 | Linux | `Linux64` selected by the controller | Architecture/ABI compatibility needs checking; ARM driver selection needs adjustment |
 
@@ -247,8 +243,7 @@ py -3.10-64 -m venv .venv
 
 Use `.venv\Scripts\python.exe` for session commands below, or activate the
 environment in your terminal first. The root-level batch launchers use `python`
-from the current environment; the launchers in the generated Windows package
-automatically select its local `.venv`.
+from the active environment.
 
 ### Apple Silicon (Python 3.11)
 
@@ -329,8 +324,19 @@ For recording and analysis without the monitor:
 python ECG_Device_Controller_v2.py 99999
 ```
 
-On Windows, `Start_ECG_Monitor_v2.bat` prompts for the session ID. Run it from an
-activated environment, or use the generated Windows package's launchers.
+On Windows, run directly with the environment created during installation:
+
+```bat
+.venv\Scripts\python.exe ECG_Device_Controller_v2.py 99999 monitor
+```
+
+Alternatively, activate the environment in Command Prompt and run the launcher,
+which prompts for the session ID:
+
+```bat
+.venv\Scripts\activate.bat
+Start_ECG_Monitor_v2.bat
+```
 
 Run from the **repository root** so that the CSV outputs have a predictable
 location. On Apple Silicon, use `python3.11` explicitly if that is your configured
@@ -385,7 +391,7 @@ No additional web service is required.
 |---|---|
 | `No bundled PLUX driver ...` or native import failure | Match the interpreter's Python minor version and CPU architecture to the driver folder |
 | `No module named ...` | Activate the intended environment and install its dependencies |
-| Windows `DLL load failed` | Check Python/driver compatibility and the required Microsoft Visual C++ runtime; see the Windows instructions |
+| Windows `DLL load failed` | Check Python/driver compatibility and the required x64 Microsoft Visual C++ runtime |
 | macOS blocks `plux.so` or `bth_macprocess` | Allow the trusted native library and helper in macOS; they are separate binaries |
 | macOS `Spawn Status 13` | Check the Bluetooth helper's execute permission |
 | Device cannot be found or pairing times out | Check power, pairing, `ECG_DEVICES`, and whether another program is using the device |
@@ -404,37 +410,7 @@ controller verifies communication with a battery read before reporting a usable
 connection. A failed verification closes the connection and raises the error.
 Battery below 10% produces a warning.
 
-See the [PLUX setup guidance](https://github.com/pluxbiosignals/python-samples)
-and [Windows instructions](packaging/windows/README_WINDOWS.txt).
-
-## Windows distribution
-
-Create a complete Windows source/driver package for a colleague:
-
-```bash
-python packaging/build_windows_package.py --version 2026-11-19
-```
-
-The ZIP and its SHA-256 checksum are written to `dist/`. The package includes the
-runtime code, Windows x64 drivers, pinned dependencies, an environment checker,
-and launchers. It includes no Python installer or preinstalled environment.
-
-After extracting the package into a new folder:
-
-1. Keep an existing working ECG environment, or run `Setup_Environment.bat` with
-   Python 3.10 x64 installed to create a local `.venv` and install dependencies.
-2. Review the server/device configuration and run `check_windows_environment.py`
-   with the intended interpreter. This checks imports without contacting the
-   device or API.
-3. Run `Start_ECG_Monitor_v2.bat` and enter the game's session ID.
-
-The setup/checker scripts under `packaging/windows/` are **package templates**;
-the build places them beside the runtime code at the ZIP's root. For a Git clone,
-use the manual environment commands in [Installation](#installation).
-
-The build uses an explicit file list, verifies the extracted files against a
-SHA-256 manifest, and runs the offline regression suite. See the complete
-[Windows package instructions](packaging/windows/README_WINDOWS.txt).
+See the [PLUX setup guidance](https://github.com/pluxbiosignals/python-samples).
 
 ## Validation and current limitations
 
@@ -448,7 +424,7 @@ The 13 regression checks cover monitor behavior and failure isolation, driver
 selection, the native device constructor contract, connection verification, and
 the mocked session workflow. They do not replace acquisition tests on the target
 hardware. macOS device connection/battery reading has been verified; Windows
-Bluetooth acquisition still needs validation on the receiving PC.
+Bluetooth acquisition requires validation on the target hardware.
 
 Current controller limitations:
 
