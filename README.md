@@ -37,7 +37,6 @@ https://github.com/user-attachments/assets/4bee90d5-419a-4acb-89e3-9a041e7dfdc7
 - [Recorded output](#recorded-output)
 - [ECG monitor](#ecg-monitor)
 - [Troubleshooting](#troubleshooting)
-- [Validation and current limitations](#validation-and-current-limitations)
 - [Third-party files](#third-party-files)
 
 ---
@@ -411,32 +410,6 @@ connection. A failed verification closes the connection and raises the error.
 Battery below 10% produces a warning.
 
 See the [PLUX setup guidance](https://github.com/pluxbiosignals/python-samples).
-
-## Validation and current limitations
-
-Run the offline suite without a device or API connection:
-
-```bash
-python -m unittest -v test_ecg_monitor.py
-```
-
-The 13 regression checks cover monitor behavior and failure isolation, driver
-selection, the native device constructor contract, connection verification, and
-the mocked session workflow. They do not replace acquisition tests on the target
-hardware. macOS device connection/battery reading has been verified; Windows
-Bluetooth acquisition requires validation on the target hardware.
-
-Current controller limitations:
-
-- The study's 20-block stopping rule and registered RMSSD description differ from
-  this checkout; see [Protocol and implementation differences](#protocol-and-implementation-differences).
-- Short recordings return no HF-HRV values, but downstream code has no safe
-  short-block fallback and may exit. A monitor label of unavailable does not
-  provide a substitute decision.
-- Device selection checks only the first discovered device entry against
-  `ECG_DEVICES`; discovery order can matter when several devices are present.
-- API polling has no overall timeout. The loop also waits for game readiness
-  before its 25-block exit check, so a completed session can remain waiting.
 
 ## Third-party files
 
